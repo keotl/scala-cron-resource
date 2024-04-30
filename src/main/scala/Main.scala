@@ -1,5 +1,15 @@
-@main def hello(): Unit =
-  println("Hello world!")
-  println(msg)
+import scala.io.StdIn.readLine
+import scala.util.CommandLineParser
 
-def msg = "I was compiled by Scala 3. :)"
+enum Command {
+  case Check, In, Out
+}
+
+given CommandLineParser.FromString[Command] with
+  def fromString(value: String): Command = Command.valueOf(value)
+
+@main def hello(command: Command): Unit = {
+  println(s"Running command ${command}.");
+  val args = readLine()
+  SelectorParser().parseSelector("a");
+}
