@@ -24,4 +24,10 @@ class CronExpressionSpec extends munit.FunSuite {
     assertEquals(parsed, Some(CronSelector.RangeIntervalSelector(10, 30, 10)))
   }
 
+  test("parses any selector") {
+    val parsed = SelectorParser().parseSelector("*")
+
+    assertEquals(parsed, Some(CronSelector.AnySelector()))
+  }
+
 }

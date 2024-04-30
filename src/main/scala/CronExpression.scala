@@ -3,6 +3,7 @@ enum CronSelector {
   case RangeSelector(rangeStart: Int, rangeEnd: Int)
   case RangeIntervalSelector(rangeStart: Int, rangeEnd: Int, period: Int)
   case IntervalSelector(period: Int)
+  case AnySelector()
 }
 
 case class CronExpression(
@@ -21,6 +22,7 @@ class SelectorParser {
   private val absolutePattern      = "^(\\w+,)*(\\w+)$".r
   private val intervalPattern      = "^\\*/([0-9]+)$".r
   private val rangeIntervalPattern = "^(\\w+)-(\\w+)/([0-9]+)$".r
+  private val anySelectorPattern   = "^\\*$".r
 
   private val numberPattern = "[0-9]+".r
 
@@ -70,6 +72,10 @@ class SelectorParser {
         }
       }
 
+      case anySelectorPattern() => {
+        Some(AnySelector())
+      }
+
       case _ => None
     }
 
@@ -79,9 +85,9 @@ class SelectorParser {
       text: String,
       nameMapping: Map[String, Int]
   ): Option[Int] = {
-    text match {
+    text.toLowerCase match {
       case x if numberPattern.matches(x) => Some(text.toInt)
-      case x                             => nameMapping.get(text)
+      case x                             => nameMapping.get(x)
     }
   }
 
