@@ -68,7 +68,7 @@ class SelectorParser {
         if (parsed.contains(Option.empty)) {
           return None
         } else {
-          return Some(AbsoluteSelector(parsed.flatten[Int].toList))
+          return Some(AbsoluteSelector(parsed.flatten[Int].toList.sorted))
         }
       }
 

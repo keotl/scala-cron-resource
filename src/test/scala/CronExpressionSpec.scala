@@ -7,7 +7,7 @@ class CronExpressionSpec extends munit.FunSuite {
   }
 
   test("parse list of values") {
-    val parsed = SelectorParser().parseSelector("10,20,30")
+    val parsed = SelectorParser().parseSelector("30,20,10")
 
     assertEquals(parsed, Some(CronSelector.AbsoluteSelector(List(10, 20, 30))))
   }
