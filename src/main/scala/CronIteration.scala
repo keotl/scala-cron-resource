@@ -1,5 +1,7 @@
 import java.time.ZonedDateTime
 import java.time.YearMonth
+import java.util.{Calendar, GregorianCalendar}
+import scala.annotation.tailrec
 object CronIteration {
 
   def latestOccurrence(
@@ -10,7 +12,7 @@ object CronIteration {
     val currentYear  = now.getYear()
     val currentDay   = now.getDayOfMonth()
 
-    val nextDay = findNextDay(
+    val nextDay = findNextWeekday(
       expression,
       DayDescriptor(MonthDescriptor(currentYear, currentMonth), currentDay)
     )
@@ -37,7 +39,21 @@ object CronIteration {
     MonthDescriptor(nextYear, nextMonth)
   }
 
-  private def findNextDay(
+  @tailrec private def findNextWeekday(
+      expression: CronExpression,
+      currentDay: DayDescriptor
+  ): DayDescriptor = {
+    val nextDay = findNextDay(expression, currentDay)
+    val nextWeekday =
+      latestWithinRange(expression.dayOfWeek, nextDay.dayOfWeek())
+    if (nextWeekday == nextDay.dayOfWeek()) {
+      nextDay
+    } else {
+      findNextWeekday(expression, nextDay.minus(currentDay.dayOfWeek() + 1))
+    }
+  }
+
+  @tailrec private def findNextDay(
       expression: CronExpression,
       currentDay: DayDescriptor
   ): DayDescriptor = {
@@ -45,11 +61,14 @@ object CronIteration {
 
     val firstCandidateDay = if (nextMonth == currentDay.month) {
       currentDay.day
-    } else { lastDayOfMonth(nextMonth) }
+    } else { nextMonth.lastDay() }
 
     val nextDay = latestWithinRange(expression.dayOfMonth, firstCandidateDay)
-
-    DayDescriptor(nextMonth, nextDay)
+    if (nextDay > 0) {
+      DayDescriptor(nextMonth, nextDay)
+    } else {
+      findNextDay(expression, currentDay.minus(currentDay.day))
+    }
   }
 
   private def monthIterator(
@@ -114,10 +133,6 @@ object CronIteration {
     }
   }
 
-  private def lastDayOfMonth(month: MonthDescriptor): Int = {
-    YearMonth.of(month.year, month.month).lengthOfMonth()
-  }
-
   private case class ValidRange(
       rangeStart: ZonedDateTime,
       rangeEnd: ZonedDateTime
@@ -130,6 +145,25 @@ object CronIteration {
         MonthDescriptor(year - 1, 12)
       }
     }
+    def lastDay(): Int = {
+      YearMonth.of(year, month).lengthOfMonth()
+    }
   }
-  private case class DayDescriptor(month: MonthDescriptor, day: Int)
+  private case class DayDescriptor(month: MonthDescriptor, day: Int) {
+    def dayOfWeek(): Int = {
+      val cal = new GregorianCalendar()
+      cal.set(month.year, month.month - 1, day, 0, 0, 0)
+      cal.get(Calendar.DAY_OF_WEEK) - 1;
+    }
+
+    def minus(days: Int): DayDescriptor = {
+      val newDay = day - days
+      if (newDay <= 0) {
+        val newMonth = month.prev()
+        DayDescriptor(newMonth, newMonth.lastDay() + newDay)
+      } else {
+        DayDescriptor(month, newDay)
+      }
+    }
+  }
 }
