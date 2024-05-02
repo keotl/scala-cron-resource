@@ -1,13 +1,55 @@
 import java.time.ZonedDateTime
+import java.time.YearMonth
 object CronIteration {
 
   def latestOccurrence(
       expression: CronExpression,
       now: ZonedDateTime
   ): ZonedDateTime = {
-    val nextMonth = monthIterator(expression, now).next()
+    val currentMonth = now.getMonthValue()
+    val currentYear  = now.getYear()
+    val currentDay   = now.getDayOfMonth()
 
-    now
+    val nextDay = findNextDay(
+      expression,
+      DayDescriptor(MonthDescriptor(currentYear, currentMonth), currentDay)
+    )
+
+    ZonedDateTime.of(
+      nextDay.month.year,
+      nextDay.month.month,
+      nextDay.day,
+      0,
+      0,
+      0,
+      0,
+      now.getZone()
+    )
+  }
+
+  private def findNextMonth(
+      expression: CronExpression,
+      currentMonth: MonthDescriptor
+  ): MonthDescriptor = {
+    val nextMonth = latestWithinRange(expression.month, currentMonth.month)
+    val nextYear = if (nextMonth > currentMonth.month) { currentMonth.year - 1 }
+    else { currentMonth.year }
+    MonthDescriptor(nextYear, nextMonth)
+  }
+
+  private def findNextDay(
+      expression: CronExpression,
+      currentDay: DayDescriptor
+  ): DayDescriptor = {
+    val nextMonth = findNextMonth(expression, currentDay.month)
+
+    val firstCandidateDay = if (nextMonth == currentDay.month) {
+      currentDay.day
+    } else { lastDayOfMonth(nextMonth) }
+
+    val nextDay = latestWithinRange(expression.dayOfMonth, firstCandidateDay)
+
+    DayDescriptor(nextMonth, nextDay)
   }
 
   private def monthIterator(
@@ -39,7 +81,7 @@ object CronIteration {
       .range(day, 0, -1)
       .scanLeft(DayDescriptor(month, day))((acc, e) => {
         val nextDay = latestWithinRange(expression.dayOfMonth, day)
-        
+
         DayDescriptor(acc.month, nextDay)
       })
   }
@@ -72,10 +114,22 @@ object CronIteration {
     }
   }
 
+  private def lastDayOfMonth(month: MonthDescriptor): Int = {
+    YearMonth.of(month.year, month.month).lengthOfMonth()
+  }
+
   private case class ValidRange(
       rangeStart: ZonedDateTime,
       rangeEnd: ZonedDateTime
   )
-  private case class MonthDescriptor(year: Int, month: Int)
+  private case class MonthDescriptor(year: Int, month: Int) {
+    def prev(): MonthDescriptor = {
+      if (month > 1) {
+        MonthDescriptor(year, month - 1)
+      } else {
+        MonthDescriptor(year - 1, 12)
+      }
+    }
+  }
   private case class DayDescriptor(month: MonthDescriptor, day: Int)
 }
