@@ -11,32 +11,24 @@ object CronIteration {
     val currentMonth      = now.getMonthValue()
     val currentYear       = now.getYear()
     val currentDayOfMonth = now.getDayOfMonth()
+    val currentHour       = now.getHour()
 
     val date =
-      DayDescriptor(
-        MonthDescriptor(currentYear, currentMonth),
-        currentDayOfMonth
+      HourDescriptor(
+        DayDescriptor(
+          MonthDescriptor(currentYear, currentMonth),
+          currentDayOfMonth
+        ),
+        currentHour
       )
 
-    val dayCandidates: List[Option[DayDescriptor]] = List(
-      if (expression.dayOfWeek != CronSelector.AnySelector()) {
-        Some(findNextWeekday(expression, date))
-      } else { None },
-      if (expression.dayOfMonth != CronSelector.AnySelector()) {
-        Some(findNextDay(expression, date))
-      } else {
-        None
-      }
-    )
-
-    val nextDay =
-      dayCandidates.flatten.maxOption.getOrElse(findNextDay(expression, date))
+    val nextDay = findNextHour(expression, date)
 
     ZonedDateTime.of(
-      nextDay.month.year,
-      nextDay.month.month,
-      nextDay.day,
-      0,
+      nextDay.day.month.year,
+      nextDay.day.month.month,
+      nextDay.day.day,
+      nextDay.hour,
       0,
       0,
       0,
@@ -54,6 +46,26 @@ object CronIteration {
     MonthDescriptor(nextYear, nextMonth)
   }
 
+  private def findNextDayCombined(
+      expression: CronExpression,
+      date: DayDescriptor
+  ): DayDescriptor = {
+    val dayCandidates: List[Option[DayDescriptor]] = List(
+      if (expression.dayOfWeek != CronSelector.AnySelector()) {
+        Some(findNextWeekday(expression, date))
+      } else { None },
+      if (expression.dayOfMonth != CronSelector.AnySelector()) {
+        Some(findNextDayOfMonth(expression, date))
+      } else {
+        None
+      }
+    )
+
+    return dayCandidates.flatten.maxOption.getOrElse(
+      findNextDayOfMonth(expression, date)
+    )
+  }
+
   @tailrec private def findNextWeekday(
       expression: CronExpression,
       currentDay: DayDescriptor
@@ -67,7 +79,7 @@ object CronIteration {
     }
   }
 
-  @tailrec private def findNextDay(
+  @tailrec private def findNextDayOfMonth(
       expression: CronExpression,
       currentDay: DayDescriptor
   ): DayDescriptor = {
@@ -81,7 +93,22 @@ object CronIteration {
     if (nextDay > 0) {
       DayDescriptor(nextMonth, nextDay)
     } else {
-      findNextDay(expression, currentDay.minus(currentDay.day))
+      findNextDayOfMonth(expression, currentDay.minus(currentDay.day))
+    }
+  }
+
+  @tailrec private def findNextHour(
+      expression: CronExpression,
+      currentHour: HourDescriptor
+  ): HourDescriptor = {
+    val nextDay = findNextDayCombined(expression, currentHour.day)
+    val nextCandidateHour = if (nextDay == currentHour.day) { currentHour.hour }
+    else { 23 }
+    val nextHour = latestWithinRange(expression.hour, nextCandidateHour)
+    if (nextHour >= 0) {
+      HourDescriptor(nextDay, nextHour)
+    } else {
+      findNextHour(expression, currentHour.minus(currentHour.hour + 1))
     }
   }
 
@@ -187,6 +214,10 @@ object CronIteration {
       cal.get(Calendar.DAY_OF_WEEK) - 1;
     }
 
+    def prev(): DayDescriptor = {
+      minus(1)
+    }
+
     def minus(days: Int): DayDescriptor = {
       val newDay = day - days
       if (newDay <= 0) {
@@ -210,6 +241,18 @@ object CronIteration {
         0
       }
     }
-
   }
+
+  private case class HourDescriptor(day: DayDescriptor, hour: Int) {
+    def minus(hours: Int): HourDescriptor = {
+      val newHour = hour - hours
+      if (newHour < 0) {
+        val newDay = day.prev()
+        HourDescriptor(newDay, 23)
+      } else {
+        HourDescriptor(day, newHour)
+      }
+    }
+  };
+  private case class MinuteDescriptor(hour: HourDescriptor, minute: Int);
 }

@@ -2,14 +2,6 @@ import java.time.ZonedDateTime
 import CronParser.parseCronString
 
 class CronIterationSpec extends munit.FunSuite {
-  // test("finds latest occurrence on start of previous minute") {
-  //   val now = ZonedDateTime.parse("2024-04-29T08:59:57Z")
-  //   val cron = parseCronString("* * * * * echo")
-
-  //   val occurrence = CronIteration.latestOccurrence(cron.get, now)
-
-  //   assertEquals(occurrence, ZonedDateTime.parse("2024-04-29T08:59:00Z"))
-  // }
 
   test("find next matching month") {
     val now = ZonedDateTime.parse("2024-04-29T08:59:57Z")
@@ -54,6 +46,24 @@ class CronIterationSpec extends munit.FunSuite {
     val occurrence = CronIteration.latestOccurrence(cron.get, now)
 
     assertEquals(occurrence, ZonedDateTime.parse("2024-03-30T00:00:00Z"))
+  }
+
+  test("select hour") {
+    val now = ZonedDateTime.parse("2024-04-01T08:59:57Z")
+    val cron = parseCronString("0 11 * * * echo")
+
+    val occurrence = CronIteration.latestOccurrence(cron.get, now)
+
+    assertEquals(occurrence, ZonedDateTime.parse("2024-03-31T11:00:00Z"))
+  }
+
+  test("select minute") {
+    val now = ZonedDateTime.parse("2024-04-01T08:59:57Z")
+    val cron = parseCronString("11 * * * * echo")
+
+    val occurrence = CronIteration.latestOccurrence(cron.get, now)
+
+    assertEquals(occurrence, ZonedDateTime.parse("2024-04-01T08:11:00Z"))
   }
 
 }
