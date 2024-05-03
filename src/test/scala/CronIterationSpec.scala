@@ -29,22 +29,31 @@ class CronIterationSpec extends munit.FunSuite {
     assertEquals(occurrence, ZonedDateTime.parse("2024-04-27T00:00:00Z"))
   }
 
-  test("combined day of month and weekday") {
+  test("combined day of month and weekday picks latest of two (logical OR)") {
     val now = ZonedDateTime.parse("2024-04-29T08:59:57Z")
     val cron = parseCronString("0 0 9 * SAT echo")
 
     val occurrence = CronIteration.latestOccurrence(cron.get, now)
 
-    assertEquals(occurrence, ZonedDateTime.parse("2024-03-09T00:00:00Z"))
+    assertEquals(occurrence, ZonedDateTime.parse("2024-04-27T00:00:00Z"))
   }
 
-  test("combined day of month and weekday (2)") {
-    val now = ZonedDateTime.parse("2024-02-29T08:59:57Z")
+  test("combined day of month and weekday picks latest of two (2)") {
+    val now = ZonedDateTime.parse("2024-04-12T08:59:57Z")
     val cron = parseCronString("0 0 9 * SAT echo")
 
     val occurrence = CronIteration.latestOccurrence(cron.get, now)
 
-    assertEquals(occurrence, ZonedDateTime.parse("2023-12-09T00:00:00Z"))
+    assertEquals(occurrence, ZonedDateTime.parse("2024-04-09T00:00:00Z"))
+  }
+
+  test("combined day of month and weekday picks latest of two (2)") {
+    val now = ZonedDateTime.parse("2024-04-01T08:59:57Z")
+    val cron = parseCronString("0 0 9 * SAT echo")
+
+    val occurrence = CronIteration.latestOccurrence(cron.get, now)
+
+    assertEquals(occurrence, ZonedDateTime.parse("2024-03-30T00:00:00Z"))
   }
 
 }

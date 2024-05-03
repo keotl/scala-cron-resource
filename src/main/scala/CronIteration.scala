@@ -8,14 +8,29 @@ object CronIteration {
       expression: CronExpression,
       now: ZonedDateTime
   ): ZonedDateTime = {
-    val currentMonth = now.getMonthValue()
-    val currentYear  = now.getYear()
-    val currentDay   = now.getDayOfMonth()
+    val currentMonth      = now.getMonthValue()
+    val currentYear       = now.getYear()
+    val currentDayOfMonth = now.getDayOfMonth()
 
-    val nextDay = findNextWeekday(
-      expression,
-      DayDescriptor(MonthDescriptor(currentYear, currentMonth), currentDay)
+    val date =
+      DayDescriptor(
+        MonthDescriptor(currentYear, currentMonth),
+        currentDayOfMonth
+      )
+
+    val dayCandidates: List[Option[DayDescriptor]] = List(
+      if (expression.dayOfWeek != CronSelector.AnySelector()) {
+        Some(findNextWeekday(expression, date))
+      } else { None },
+      if (expression.dayOfMonth != CronSelector.AnySelector()) {
+        Some(findNextDay(expression, date))
+      } else {
+        None
+      }
     )
+
+    val nextDay =
+      dayCandidates.flatten.maxOption.getOrElse(findNextDay(expression, date))
 
     ZonedDateTime.of(
       nextDay.month.year,
@@ -43,13 +58,12 @@ object CronIteration {
       expression: CronExpression,
       currentDay: DayDescriptor
   ): DayDescriptor = {
-    val nextDay = findNextDay(expression, currentDay)
     val nextWeekday =
-      latestWithinRange(expression.dayOfWeek, nextDay.dayOfWeek())
-    if (nextWeekday == nextDay.dayOfWeek()) {
-      nextDay
+      latestWithinRange(expression.dayOfWeek, currentDay.dayOfWeek())
+    if (nextWeekday == currentDay.dayOfWeek()) {
+      currentDay
     } else {
-      findNextWeekday(expression, nextDay.minus(currentDay.dayOfWeek() + 1))
+      findNextWeekday(expression, currentDay.minus(currentDay.dayOfWeek() + 1))
     }
   }
 
@@ -137,7 +151,8 @@ object CronIteration {
       rangeStart: ZonedDateTime,
       rangeEnd: ZonedDateTime
   )
-  private case class MonthDescriptor(year: Int, month: Int) {
+  private case class MonthDescriptor(year: Int, month: Int)
+      extends Ordered[MonthDescriptor] {
     def prev(): MonthDescriptor = {
       if (month > 1) {
         MonthDescriptor(year, month - 1)
@@ -148,8 +163,24 @@ object CronIteration {
     def lastDay(): Int = {
       YearMonth.of(year, month).lengthOfMonth()
     }
+
+    def compare(that: MonthDescriptor): Int = {
+      if (year < that.year) {
+        -1
+      } else if (year > that.year) {
+        1
+      } else if (month < that.month) {
+        -1
+      } else if (month > that.month) {
+        1
+      } else {
+        0
+      }
+    }
+
   }
-  private case class DayDescriptor(month: MonthDescriptor, day: Int) {
+  private case class DayDescriptor(month: MonthDescriptor, day: Int)
+      extends Ordered[DayDescriptor] {
     def dayOfWeek(): Int = {
       val cal = new GregorianCalendar()
       cal.set(month.year, month.month - 1, day, 0, 0, 0)
@@ -165,5 +196,20 @@ object CronIteration {
         DayDescriptor(month, newDay)
       }
     }
+
+    def compare(that: DayDescriptor): Int = {
+      if (month < that.month) {
+        -1
+      } else if (month > that.month) {
+        1
+      } else if (day < that.day) {
+        -1
+      } else if (day > that.day) {
+        1
+      } else {
+        0
+      }
+    }
+
   }
 }
