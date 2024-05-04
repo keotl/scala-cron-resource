@@ -161,7 +161,7 @@ object CronIteration {
       case CronSelector.WeekdayOrdinalSelector(dayOfWeek, weekNumber) => {
         // We have to check the weekNumber separately
         if (dayOfWeek <= value) {
-          value
+          dayOfWeek
         } else {
           -1
         }

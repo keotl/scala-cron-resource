@@ -84,4 +84,13 @@ class CronIterationSpec extends munit.FunSuite {
     assertEquals(occurrence, ZonedDateTime.parse("2024-04-14T00:00:00Z"))
   }
 
+  test("selects Nth weekday of month in first week") {
+    val now  = ZonedDateTime.parse("2024-05-04T08:59:57Z")
+    val cron = parseCronString("0 0 * * SUN#1")
+
+    val occurrence = CronIteration.latestOccurrence(cron.get, now)
+
+    assertEquals(occurrence, ZonedDateTime.parse("2024-04-07T00:00:00Z"))
+  }
+
 }
