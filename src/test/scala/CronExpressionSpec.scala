@@ -30,4 +30,10 @@ class CronExpressionSpec extends munit.FunSuite {
     assertEquals(parsed, Some(CronSelector.AnySelector()))
   }
 
+  test("parses a dayOfWeek ordinal selector") {
+    val parsed = SelectorParser().parseSelector("SUN#4", SelectorParser().WEEKDAYS)
+
+    assertEquals(parsed, Some(CronSelector.WeekdayOrdinalSelector(0, 4)))
+  }
+
 }

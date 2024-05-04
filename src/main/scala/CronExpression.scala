@@ -3,6 +3,7 @@ enum CronSelector {
   case RangeSelector(rangeStart: Int, rangeEnd: Int)
   case RangeIntervalSelector(rangeStart: Int, rangeEnd: Int, period: Int)
   case IntervalSelector(period: Int)
+  case WeekdayOrdinalSelector(dayOfWeek: Int, weekNumber: Int)
   case AnySelector()
 }
 
@@ -11,17 +12,18 @@ case class CronExpression(
     hour: CronSelector,
     dayOfMonth: CronSelector,
     month: CronSelector,
-    dayOfWeek: CronSelector,
+    dayOfWeek: CronSelector
 )
 
 class SelectorParser {
   import CronSelector._
 
-  private val rangePattern         = "^(\\w+)-(\\w+)$".r
-  private val absolutePattern      = "^(\\w+,)*(\\w+)$".r
-  private val intervalPattern      = "^\\*/([0-9]+)$".r
-  private val rangeIntervalPattern = "^(\\w+)-(\\w+)/([0-9]+)$".r
-  private val anySelectorPattern   = "^\\*$".r
+  private val rangePattern          = "^(\\w+)-(\\w+)$".r
+  private val absolutePattern       = "^(\\w+,)*(\\w+)$".r
+  private val intervalPattern       = "^\\*/([0-9]+)$".r
+  private val rangeIntervalPattern  = "^(\\w+)-(\\w+)/([0-9]+)$".r
+  private val weekdayOrdinalPattern = "^(\\w+)#([1-5])$".r
+  private val anySelectorPattern    = "^\\*$".r
 
   private val numberPattern = "[0-9]+".r
 
@@ -73,6 +75,17 @@ class SelectorParser {
 
       case anySelectorPattern() => {
         Some(AnySelector())
+      }
+
+      case weekdayOrdinalPattern(weekday: String, weekNumber: String) => {
+        val parsedValue      = parseNamed(weekday, allowedNames)
+        val parsedWeekNumber = parseNamed(weekNumber, NONE)
+
+        ((parsedValue, parsedWeekNumber)) match {
+          case (Some(weekdayValue), Some(weekNumberValue)) =>
+            Some(WeekdayOrdinalSelector(weekdayValue, weekNumberValue))
+          case _ => None
+        }
       }
 
       case _ => None

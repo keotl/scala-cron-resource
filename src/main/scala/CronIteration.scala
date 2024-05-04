@@ -70,10 +70,20 @@ object CronIteration {
   ): DayDescriptor = {
     val nextWeekday =
       latestWithinRange(expression.dayOfWeek, currentDay.dayOfWeek())
-    if (nextWeekday == currentDay.dayOfWeek()) {
+
+    val canSelectCurrentWeek = expression.dayOfWeek match {
+      case CronSelector.WeekdayOrdinalSelector(dayOfWeek, weekNumber) =>
+        currentDay.day <= weekNumber * 7 && currentDay.day >= (weekNumber - 1) * 7
+      case _ => true
+    }
+
+    if (nextWeekday == currentDay.dayOfWeek() && canSelectCurrentWeek) {
       currentDay
     } else {
-      findNextWeekday(expression, currentDay.minus(currentDay.dayOfWeek().max(1)))
+      findNextWeekday(
+        expression,
+        currentDay.minus(currentDay.dayOfWeek().max(1))
+      )
     }
   }
 
@@ -146,6 +156,14 @@ object CronIteration {
           return (value / period) * period
         } else {
           return (rangeEnd / period) * period
+        }
+      }
+      case CronSelector.WeekdayOrdinalSelector(dayOfWeek, weekNumber) => {
+        // We have to check the weekNumber separately
+        if (dayOfWeek <= value) {
+          value
+        } else {
+          -1
         }
       }
       case CronSelector.AnySelector() => value
