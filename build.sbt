@@ -9,6 +9,7 @@ lazy val root = project
     scalaVersion := scala3Version,
 
     libraryDependencies += "org.scalameta" %% "munit" % "0.7.29" % Test,
+    libraryDependencies += "org.playframework" %% "play-json" % "3.0.3",
 
     scalacOptions += "-Wunused:all" // required by `RemoveUnused` rule
   )

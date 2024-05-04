@@ -149,8 +149,6 @@ object CronIteration {
         }
       }
       case CronSelector.AnySelector() => value
-
-      case _ => throw new Error()
     }
   }
 
