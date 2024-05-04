@@ -8,28 +8,26 @@ object CronIteration {
       expression: CronExpression,
       now: ZonedDateTime
   ): ZonedDateTime = {
-    val currentMonth      = now.getMonthValue()
-    val currentYear       = now.getYear()
-    val currentDayOfMonth = now.getDayOfMonth()
-    val currentHour       = now.getHour()
-
     val date =
-      HourDescriptor(
-        DayDescriptor(
-          MonthDescriptor(currentYear, currentMonth),
-          currentDayOfMonth
+      MinuteDescriptor(
+        HourDescriptor(
+          DayDescriptor(
+            MonthDescriptor(now.getYear(), now.getMonthValue()),
+            now.getDayOfMonth()
+          ),
+          now.getHour()
         ),
-        currentHour
+        now.getMinute()
       )
 
-    val nextDay = findNextHour(expression, date)
+    val nextDay = findNextMinute(expression, date)
 
     ZonedDateTime.of(
-      nextDay.day.month.year,
-      nextDay.day.month.month,
-      nextDay.day.day,
-      nextDay.hour,
-      0,
+      nextDay.hour.day.month.year,
+      nextDay.hour.day.month.month,
+      nextDay.hour.day.day,
+      nextDay.hour.hour,
+      nextDay.minute,
       0,
       0,
       now.getZone()
@@ -112,38 +110,20 @@ object CronIteration {
     }
   }
 
-  private def monthIterator(
+  @tailrec private def findNextMinute(
       expression: CronExpression,
-      now: ZonedDateTime
-  ): Iterator[MonthDescriptor] = {
-    val currentMonth = now.getMonthValue()
-    val currentYear  = now.getYear()
-
-    Iterator
-      .from(0)
-      .scanLeft(MonthDescriptor(currentYear, currentMonth))((acc, e) => {
-        val MonthDescriptor(year, month) = acc
-        val nextValidMonth = latestWithinRange(expression.month, month)
-        val nextValidYear = if (nextValidMonth > month) { year - 1 }
-        else { year }
-        MonthDescriptor(nextValidYear, nextValidMonth)
-      })
-  }
-
-  private def dayIterator(
-      expression: CronExpression,
-      month: MonthDescriptor,
-      day: Int
-  ): Iterator[DayDescriptor] = {
-    // latestWithinRange(expression.dayOfMonth, day)
-
-    Iterator
-      .range(day, 0, -1)
-      .scanLeft(DayDescriptor(month, day))((acc, e) => {
-        val nextDay = latestWithinRange(expression.dayOfMonth, day)
-
-        DayDescriptor(acc.month, nextDay)
-      })
+      currentMinute: MinuteDescriptor
+  ): MinuteDescriptor = {
+    val nextHour = findNextHour(expression, currentMinute.hour)
+    val nextCandidateMinute = if (nextHour == currentMinute.hour) {
+      currentMinute.minute
+    } else { 59 }
+    val nextMinute = latestWithinRange(expression.minute, nextCandidateMinute)
+    if (nextMinute >= 0) {
+      MinuteDescriptor(nextHour, nextMinute)
+    } else {
+      findNextMinute(expression, currentMinute.minus(currentMinute.minute + 1))
+    }
   }
 
   private def latestWithinRange(selector: CronSelector, value: Int): Int = {
@@ -174,10 +154,6 @@ object CronIteration {
     }
   }
 
-  private case class ValidRange(
-      rangeStart: ZonedDateTime,
-      rangeEnd: ZonedDateTime
-  )
   private case class MonthDescriptor(year: Int, month: Int)
       extends Ordered[MonthDescriptor] {
     def prev(): MonthDescriptor = {
@@ -254,5 +230,15 @@ object CronIteration {
       }
     }
   };
-  private case class MinuteDescriptor(hour: HourDescriptor, minute: Int);
+  private case class MinuteDescriptor(hour: HourDescriptor, minute: Int) {
+    def minus(minutes: Int): MinuteDescriptor = {
+      val newMinute = minute - minutes
+      if (newMinute < 0) {
+        val newHour = hour.minus(1)
+        MinuteDescriptor(newHour, newMinute)
+      } else {
+        MinuteDescriptor(hour, newMinute)
+      }
+    }
+  };
 }
