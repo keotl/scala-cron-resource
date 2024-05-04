@@ -1,11 +1,16 @@
-FROM sbtscala/scala-sbt:eclipse-temurin-alpine-21.0.2_13_1.9.9_3.4.1 as build
+FROM eclipse-temurin:21.0.1_12-jdk-alpine  as build
+
+RUN apk add wget
+RUN wget https://github.com/sbt/sbt/releases/download/v1.9.9/sbt-1.9.9.tgz
+RUN tar -xvzf sbt*.tgz
+RUN mv sbt/bin/sbt /usr/bin/sbt
 
 WORKDIR /app
 COPY . /app
 
 RUN sbt assembly
 
-FROM openjdk:21-jdk
+FROM eclipse-temurin:21.0.1_12-jre-alpine
 WORKDIR /app
 
 COPY --from=build /app/target/scala-*/*.jar /app/cron-resource.jar
