@@ -4,8 +4,8 @@ import CronParser.parseCronString
 class CronIterationSpec extends munit.FunSuite {
 
   test("find next matching month") {
-    val now = ZonedDateTime.parse("2024-04-29T08:59:57Z")
-    val cron = parseCronString("0 0 1 * * echo")
+    val now  = ZonedDateTime.parse("2024-04-29T08:59:57Z")
+    val cron = parseCronString("0 0 1 * *")
 
     val occurrence = CronIteration.latestOccurrence(cron.get, now)
 
@@ -13,8 +13,8 @@ class CronIterationSpec extends munit.FunSuite {
   }
 
   test("find next matching weekday") {
-    val now = ZonedDateTime.parse("2024-04-29T08:59:57Z")
-    val cron = parseCronString("0 0 * * SAT echo")
+    val now  = ZonedDateTime.parse("2024-04-29T08:59:57Z")
+    val cron = parseCronString("0 0 * * SAT")
 
     val occurrence = CronIteration.latestOccurrence(cron.get, now)
 
@@ -22,8 +22,8 @@ class CronIterationSpec extends munit.FunSuite {
   }
 
   test("combined day of month and weekday picks latest of two (logical OR)") {
-    val now = ZonedDateTime.parse("2024-04-29T08:59:57Z")
-    val cron = parseCronString("0 0 9 * SAT echo")
+    val now  = ZonedDateTime.parse("2024-04-29T08:59:57Z")
+    val cron = parseCronString("0 0 9 * SAT")
 
     val occurrence = CronIteration.latestOccurrence(cron.get, now)
 
@@ -31,8 +31,8 @@ class CronIterationSpec extends munit.FunSuite {
   }
 
   test("combined day of month and weekday picks latest of two (2)") {
-    val now = ZonedDateTime.parse("2024-04-12T08:59:57Z")
-    val cron = parseCronString("0 0 9 * SAT echo")
+    val now  = ZonedDateTime.parse("2024-04-12T08:59:57Z")
+    val cron = parseCronString("0 0 9 * SAT")
 
     val occurrence = CronIteration.latestOccurrence(cron.get, now)
 
@@ -40,8 +40,8 @@ class CronIterationSpec extends munit.FunSuite {
   }
 
   test("combined day of month and weekday picks latest of two (2)") {
-    val now = ZonedDateTime.parse("2024-04-01T08:59:57Z")
-    val cron = parseCronString("0 0 9 * SAT echo")
+    val now  = ZonedDateTime.parse("2024-04-01T08:59:57Z")
+    val cron = parseCronString("0 0 9 * SAT")
 
     val occurrence = CronIteration.latestOccurrence(cron.get, now)
 
@@ -49,8 +49,8 @@ class CronIterationSpec extends munit.FunSuite {
   }
 
   test("select hour") {
-    val now = ZonedDateTime.parse("2024-04-01T08:59:57Z")
-    val cron = parseCronString("0 11 * * * echo")
+    val now  = ZonedDateTime.parse("2024-04-01T08:59:57Z")
+    val cron = parseCronString("0 11 * * *")
 
     val occurrence = CronIteration.latestOccurrence(cron.get, now)
 
@@ -58,12 +58,21 @@ class CronIterationSpec extends munit.FunSuite {
   }
 
   test("select minute") {
-    val now = ZonedDateTime.parse("2024-04-01T08:59:57Z")
-    val cron = parseCronString("11 * * * * echo")
+    val now  = ZonedDateTime.parse("2024-04-01T08:59:57Z")
+    val cron = parseCronString("11 * * * *")
 
     val occurrence = CronIteration.latestOccurrence(cron.get, now)
 
     assertEquals(occurrence, ZonedDateTime.parse("2024-04-01T08:11:00Z"))
+  }
+
+  test("selects a sunday") {
+    val now  = ZonedDateTime.parse("2024-04-01T08:59:57Z")
+    val cron = parseCronString("0 0 * * SUN")
+
+    val occurrence = CronIteration.latestOccurrence(cron.get, now)
+
+    assertEquals(occurrence, ZonedDateTime.parse("2024-03-31T00:00:00Z"))
   }
 
 }

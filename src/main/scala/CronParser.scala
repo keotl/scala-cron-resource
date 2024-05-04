@@ -2,9 +2,8 @@ object CronParser {
   private val parser = SelectorParser()
 
   def parseCronString(cron: String): Option[CronExpression] = {
-    print(cron.split(" ", 6).mkString("Array(", ", ", ")"))
-    cron.split(" ", 6) match {
-      case Array(a, b, c, d, e, command) => {
+    cron.split(" ") match {
+      case Array(a, b, c, d, e) => {
         (
           parser.parseSelector(a),
           parser.parseSelector(b),
@@ -25,8 +24,7 @@ object CronParser {
                 hour,
                 dayOfMonth,
                 month,
-                dayOfWeek,
-                command
+                dayOfWeek
               )
             )
           }

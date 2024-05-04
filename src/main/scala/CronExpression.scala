@@ -12,7 +12,6 @@ case class CronExpression(
     dayOfMonth: CronSelector,
     month: CronSelector,
     dayOfWeek: CronSelector,
-    command: String
 )
 
 class SelectorParser {

@@ -73,7 +73,7 @@ object CronIteration {
     if (nextWeekday == currentDay.dayOfWeek()) {
       currentDay
     } else {
-      findNextWeekday(expression, currentDay.minus(currentDay.dayOfWeek() + 1))
+      findNextWeekday(expression, currentDay.minus(currentDay.dayOfWeek().max(1)))
     }
   }
 

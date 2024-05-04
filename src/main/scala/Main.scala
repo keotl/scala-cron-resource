@@ -51,7 +51,7 @@ def checkCommand(): Unit = {
   )
 }
 
-@main def hello(command: Command): Unit = {
+@main def main(command: Command): Unit = {
   command match {
     case Command.Check => checkCommand()
     case Command.In    => inCommand()
